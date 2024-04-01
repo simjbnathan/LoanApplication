@@ -1,0 +1,130 @@
+﻿@model LoanAppWeb.Models.LoanApplicationModel
+
+@{
+    ViewData["Title"] = "Loan Application";
+}
+@if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        @ViewBag.ErrorMessage
+    </div>
+}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title text-center mb-4">Quote Calculator</h2>
+
+                    <form asp-action="CalculateQuote" method="post" class="needs-validation" novalidate>
+                        <!-- Amount Required -->
+                        <div class="form-group">
+                            <label for="amountRange" style="position: relative;">Amount Required: <span id="amountOutput">@Model.AmountRequired</span></label>
+                            <input asp-for="AmountRequired" class="form-control-range" id="amountRange" type="range" min="0" max="@Model.AmountRequired" oninput="document.getElementById('amountOutput').innerText = this.value" />
+                            <span asp-validation-for="AmountRequired" class="text-danger"></span>
+                        </div>
+
+
+                        <div class="form-group">
+                            <label for="termRange" style="position: relative;">Term (in months): <output id="termOutput">@Model.Term</output></label>
+                            <input asp-for="Term" class="form-control-range" id="termRange" type="range" min="0" max="@Model.Term" oninput="document.getElementById('termOutput').innerText = this.value" />
+                            <span asp-validation-for="Term" class="text-danger"></span>
+                        </div>
+
+
+                        <!-- Product -->
+                        <div class="form-group">
+                            <label for="productSelect">Product:</label>
+                            <select asp-for="Product" class="form-control" id="productSelect">
+                                <option value="ProductA">Product A</option>
+                                <option value="ProductB">Product B</option>
+                                <option value="ProductC">Product C</option>
+                            </select>
+                            <span asp-validation-for="Product" class="text-danger"></span>
+                        </div>
+
+                        <!-- Personal Information -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <!-- Title -->
+                                <div class="form-group">
+                                    <label asp-for="Title">Title:</label>
+                                    <input asp-for="Title" class="form-control" />
+                                    <span asp-validation-for="Title" class="text-danger"></span>
+                                </div>
+
+                                <!-- First Name -->
+                                <div class="form-group">
+                                    <label asp-for="FirstName">First Name:</label>
+                                    <input asp-for="FirstName" class="form-control" />
+                                    <span asp-validation-for="FirstName" class="text-danger"></span>
+                                </div>
+
+                                <!-- Last Name -->
+                                <div class="form-group">
+                                    <label asp-for="LastName">Last Name:</label>
+                                    <input asp-for="LastName" class="form-control" />
+                                    <span asp-validation-for="LastName" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <!-- Date of Birth -->
+                                <div class="form-group">
+                                    <label asp-for="DateOfBirth">Date of Birth:</label>
+                                    <input asp-for="DateOfBirth" class="form-control" />
+                                    <span asp-validation-for="DateOfBirth" class="text-danger"></span>
+                                </div>
+
+                                <!-- Mobile -->
+                                <div class="form-group">
+                                    <label asp-for="Mobile">Mobile:</label>
+                                    <input asp-for="Mobile" class="form-control" />
+                                    <span asp-validation-for="Mobile" class="text-danger"></span>
+                                </div>
+
+                                <!-- Email -->
+                                <div class="form-group">
+                                    <label asp-for="Email">Email:</label>
+                                    <input asp-for="Email" class="form-control" />
+                                    <span asp-validation-for="Email" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary">Calculate Quote</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+@section Scripts {
+    <script>
+        // Bootstrap validation script
+        (function () {
+            'use strict'
+            var forms = document.querySelectorAll('.needs-validation')
+            Array.prototype.slice.call(forms)
+                .forEach(function (form) {
+                    form.addEventListener('submit', function (event) {
+                        if (!form.checkValidity()) {
+                            event.preventDefault()
+                            event.stopPropagation()
+                        }
+                        form.classList.add('was-validated')
+                    }, false)
+                })
+        })()
+
+       
+    </script>
+}
