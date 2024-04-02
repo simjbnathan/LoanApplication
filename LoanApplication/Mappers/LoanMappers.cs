@@ -5,7 +5,7 @@ namespace LoanApplicationApi.Mappers
 {
     public static class LoanMappers
     {
-        public static LoanApplicationRequestDto MapToLoanApplicationModel(this LoanApplicationModel loanModel)
+        public static LoanApplicationRequestDto MapToLoanApplicationModel(this LoanApplicationRequestModel loanModel)
         {
             return new LoanApplicationRequestDto
             {
@@ -20,9 +20,9 @@ namespace LoanApplicationApi.Mappers
             };
         }
 
-        public static LoanApplicationModel ToLoanFromCreateDto(this CreateLoanRequestDto loanRequestDto)
+        public static LoanApplicationRequestModel ToLoanFromCreateDto(this CreateLoanRequestDto loanRequestDto)
         {
-            return new LoanApplicationModel
+            return new LoanApplicationRequestModel
             {
                 AmountRequired = loanRequestDto.AmountRequired,
                 Term = loanRequestDto.Term,

@@ -2,7 +2,9 @@
 
 namespace LoanAppWeb.Models
 {
-    public class LoanApplicationModel
+
+
+    public class LoanApplicationViewModel
     {
         public int Id { get; set; }
         [Required(ErrorMessage = "Amount Required is required")]
@@ -13,7 +15,7 @@ namespace LoanAppWeb.Models
         public int Term { get; set; }
 
         [Required(ErrorMessage = "Title is required")]
-        public string Title { get; set; } 
+        public string  Title { get; set; } 
 
         [Required(ErrorMessage = "First Name is required")]
         [Display(Name = "First Name")]

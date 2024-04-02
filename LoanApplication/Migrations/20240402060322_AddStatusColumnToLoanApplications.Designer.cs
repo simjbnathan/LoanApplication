@@ -3,6 +3,7 @@ using System;
 using LoanApplicationApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LoanApplicationApi.Migrations
 {
     [DbContext(typeof(LoanDbContext))]
-    partial class LoanDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240402060322_AddStatusColumnToLoanApplications")]
+    partial class AddStatusColumnToLoanApplications
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.3");
@@ -24,10 +27,6 @@ namespace LoanApplicationApi.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<decimal>("AmountRequired")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ApplicantIdentifier")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("DateOfBirth")
@@ -50,10 +49,6 @@ namespace LoanApplicationApi.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Product")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("RedirectUrl")
                         .IsRequired()
                         .HasColumnType("TEXT");
 

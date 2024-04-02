@@ -1,204 +1,97 @@
 ﻿using LoanAppWeb.Models;
+using LoanAppWeb.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using Microsoft.VisualBasic;
-using Newtonsoft.Json;
-using System.Text;
-
+using System;
+using System.Threading.Tasks;
 
 namespace LoanAppWeb.Controllers
 {
     public class LoanController : Controller
     {
-        private readonly HttpClient _httpClient;
-        private readonly ApiSettings _apiSettings;
+        private readonly ILoanApplicationService _loanApplicationService;
 
-        public LoanController(IHttpClientFactory httpClientFactory, IOptions<ApiSettings> apiSettings)
+        public LoanController(ILoanApplicationService loanApplicationService)
         {
-            _httpClient = httpClientFactory.CreateClient("LoanAppApi");
-            _apiSettings = apiSettings.Value;
-        }
-        private decimal _establishmentFee = 300;
-        private decimal _interestRate = 0.05m; // Default interest rate (5%)
-
-        public void SetInterestRate(decimal rate)
-        {
-            _interestRate = rate;
+            _loanApplicationService = loanApplicationService ?? throw new ArgumentNullException(nameof(loanApplicationService));
         }
 
         public async Task<IActionResult> LoanApplication(int id)
         {
             try
             {
-                // Send GET request to the API endpoint
-                var response = await _httpClient.GetAsync($"{_apiSettings.LoanApiBaseUrl}api/LoanApplicationApi/{id}");
-
-                // Handle response
-                if (response.IsSuccessStatusCode)
-                {
-                    // Deserialize response content and pass data to the view
-                    var loanApplications = await response.Content.ReadFromJsonAsync<LoanApplicationModel>();
-                    return View(loanApplications);
-                }
-                else
-                {
-                    // Handle unsuccessful response
-                    return StatusCode((int)response.StatusCode, "Failed to fetch loan applications.");
-                }
+                var loanApplication = await _loanApplicationService.GetLoanApplication(id);
+                return View(loanApplication);
             }
             catch (Exception ex)
             {
-                // Handle exception
+                // Log the exception
                 return StatusCode(500, "An error occurred while processing your request.");
             }
         }
 
-
-
         [HttpPost]
-        public IActionResult CalculateQuote(LoanApplicationModel model)
+        public async Task<IActionResult> CalculateQuote(LoanApplicationViewModel model)
         {
-            // Perform calculations and store repayment amount in the model
-            model.RepaymentAmount = CalculateRepaymentAmount(model.AmountRequired, model.Term, model.Product);
+            try
 
-            // Serialize LoanApplicationModel to JSON string
-            string jsonLoanApplication = JsonConvert.SerializeObject(model);
-
-            // Store JSON string in TempData
-            TempData["LoanApplicationModel"] = jsonLoanApplication;
-
-            // Redirect to the quote page
-            return RedirectToAction("RedirectQoute");
+            {
+                if (!ModelState.IsValid)
+                {
+                    // If model state is invalid, return the view with validation errors
+                    return View("LoanApplication", model);
+                }
+                var repaymentAmount = await _loanApplicationService.CalculateRepaymentAmount(model);
+                model.RepaymentAmount = repaymentAmount;
+                return View("Quote", model);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                ViewData["ErrorMessage"] = ex.Message;
+                return View("LoanApplication", model);
+            }
         }
 
-        public decimal CalculateRepaymentAmount(decimal loanAmount, int durationInMonths, string product)
+        [HttpPost]
+        public async Task<IActionResult> SubmitLoanApplication(LoanApplicationViewModel model)
         {
             try
             {
-                if (durationInMonths <= 0)
+                if (!ModelState.IsValid)
                 {
-                    throw new ArgumentException("Duration must be a positive integer greater than zero.");
+                    // If model state is invalid, return the view with validation errors
+                    return View("LoanApplication", model);
                 }
 
-                // Calculate monthly interest rate based on product
-                decimal monthlyInterestRate = GetMonthlyInterestRate(product) / 12;
-
-         
-                int totalPayments = durationInMonths;
-
-                // Calculate the repayment amount using Financial.Pmt method
-                decimal repaymentAmount = (decimal)Financial.Pmt((double)monthlyInterestRate, totalPayments, (double)-loanAmount);
-
-                repaymentAmount += _establishmentFee;
-
-                return repaymentAmount;
-            }
-            catch (DivideByZeroException ex)
-            {
-                Console.WriteLine(ex.Message);
-                throw new InvalidOperationException("An error occurred while calculating the repayment amount.");
-            }
-        }
-        private decimal GetMonthlyInterestRate(string product)
-        {
-            // Determine the interest rate based on the selected product
-            switch (product)
-            {
-                case "ProductA":
-                    return 0.0m; // No interest
-                case "ProductB":
-                    return 0.05m; // 5% interest rate
-                case "ProductC":
-                    return 0.1m; // 10% interest rate
-                default:
-                    throw new ArgumentException("Invalid product");
-            }
-        }
-        public IActionResult RedirectQoute()
-        {
-            // Retrieve JSON string from TempData
-            string jsonLoanApplication = TempData["LoanApplicationModel"] as string;
-
-            // Deserialize JSON string back to LoanApplicationModel
-            LoanApplicationModel model = JsonConvert.DeserializeObject<LoanApplicationModel>(jsonLoanApplication);
-
-            // Pass the deserialized LoanApplicationModel to the view
-            return View("Quote", model);
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> SubmitLoanApplication(LoanApplicationModel model)
-        {
-            try
-            {
-                // Call API for validation checks
-                if (!await PerformValidationChecksAsync(model))
+                // Perform validation checks
+                if (!await _loanApplicationService.ValidateLoanApplication(model))
                 {
                     throw new Exception("Validation checks failed. Please review your information.");
                 }
 
-                // Call the API to apply for the loan
-                await ApplyForLoanAsync(model);
+                // Apply for the loan
+                await _loanApplicationService.ApplyForLoanAsync(model);
 
-                // If successful, redirect to success page
-                return RedirectToAction("SuccessPage");
+                // Redirect to success page
+                return RedirectToAction("Success", "Loan");
             }
             catch (Exception ex)
             {
-                // Handle exception
-                ViewBag.ErrorMessage = ex.Message;
-                return View("LoanApplication", model); // Return the view with error message
+                // Log the exception
+                ViewData["ErrorMessage"] = ex.Message;
+                return View("Quote", model);
             }
         }
 
-        private async Task<bool> PerformValidationChecksAsync(LoanApplicationModel model)
+        public IActionResult Test()
         {
-
-            try
-            {
-                // Serialize loan application model to JSON
-                var jsonContent = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
-
-                // Send POST request to validation endpoint
-                var response = await _httpClient.PostAsync($"{_apiSettings.LoanApiBaseUrl}/api/LoanApplicationApi/validate", jsonContent);
-
-                // Check if request was successful
-                response.EnsureSuccessStatusCode();
-
-                // Read response content
-                var responseContent = await response.Content.ReadAsStringAsync();
-
-                // Deserialize response content to boolean
-                var validationResult = JsonConvert.DeserializeObject<bool>(responseContent);
-
-                return validationResult;
-            }
-            catch (HttpRequestException ex)
-            {
-                // Handle HTTP request exception
-                throw new Exception("Failed to perform validation checks. Please try again later.", ex);
-            }
-            catch (Exception ex)
-            {
-                // Handle other exceptions
-                throw new Exception("An error occurred while performing validation checks.", ex);
-            }
+            return Redirect(Request.Headers["Referer"].ToString());
         }
 
-        private async Task ApplyForLoanAsync(LoanApplicationModel model)
+        public IActionResult Success()
         {
-            var jsonContent = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
-
-            var response = await _httpClient.PostAsync($"{_apiSettings.LoanApiBaseUrl}/api/LoanApplicationApi/apply", jsonContent);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                // Handle unsuccessful response
-                throw new Exception("Failed to apply for loan. Please try again later.");
-            }
+            return View();
         }
-
     }
-
-
 }

@@ -1,4 +1,4 @@
-﻿@model LoanAppWeb.Models.LoanApplicationModel
+﻿@model LoanAppWeb.Models.LoanApplicationViewModel
 
 
 <div class="container">
@@ -30,7 +30,7 @@
                             </div>
                         </div>
                         <div class="text-center">
-                            <a asp-controller="Loan" asp-action="LoanApplication" class="btn btn-sm btn-secondary">Edit Personal Information</a>
+                                <a onclick ="window.history.back()" class="btn btn-sm btn-secondary">Edit Personal Information</a>
                         </div>
                     </div>
 
@@ -50,7 +50,7 @@
                             <div class="text-danger">$@Model.RepaymentAmount (Monthly)</div>
                         </div>
                         <div class="text-center">
-                            <a asp-controller="Loan" asp-action="LoanApplication" class="btn btn-sm btn-secondary">Edit Quote Details</a>
+                                <a onclick="window.history.back()" class="btn btn-sm btn-secondary">Edit Quote Details</a>
                         </div>
                     </div>
 

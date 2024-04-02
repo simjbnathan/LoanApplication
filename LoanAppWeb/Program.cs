@@ -1,4 +1,5 @@
 using LoanAppWeb.Models;
+using LoanAppWeb.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +11,8 @@ services.AddHttpClient("LoanAppApi", client =>
     var apiSettings = builder.Configuration.GetSection("ApiSettings").Get<ApiSettings>();   
     client.BaseAddress = new Uri(apiSettings.LoanApiBaseUrl);
 });
+
+services.AddScoped<ILoanApplicationService, LoanApplicationService>();
 
 builder.Services.AddControllersWithViews();
 

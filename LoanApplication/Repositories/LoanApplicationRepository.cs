@@ -14,28 +14,43 @@ namespace LoanApplicationApi.Repositories
 
 
 
-        public async Task<List<LoanApplicationModel>> GetAllLoanApplications()
+        public async Task<List<LoanApplicationRequestModel>> GetAllLoanApplications()
         {
             return await _dbContext.LoanApplications.ToListAsync();
         }
 
-        public async Task<LoanApplicationModel> SaveLoanApplicationAsync(LoanApplicationModel loanApplicationDto)
+        public async Task<LoanApplicationRequestModel> SaveLoanApplicationAsync(LoanApplicationRequestModel loanApplicationDto)
         {
             await _dbContext.AddAsync(loanApplicationDto);
             await _dbContext.SaveChangesAsync();
             return loanApplicationDto;
         }
 
-        public async Task<LoanApplicationModel> GetLoanApplicationByIdAsync(int id)
+        public async Task<LoanApplicationRequestModel> GetLoanApplicationByIdAsync(int id)
         {
-            return await _dbContext.FindAsync<LoanApplicationModel>(id);
+            return await _dbContext.FindAsync<LoanApplicationRequestModel>(id);
         }
 
-        public async Task<LoanApplicationModel> ProcessLoanApplicationAsync(LoanApplicationModel model)
+        public async Task<LoanApplicationRequestModel> ProcessLoanApplicationAsync(LoanApplicationRequestModel model)
         {
             await _dbContext.AddAsync(model);
             await _dbContext.SaveChangesAsync();
             return model;
+        }
+
+        public async Task<(bool loanExists, string existingRedirectUrl)> GetExistingLoan(string applicantIdentifier, LoanApplicationRequestModel loanModel)
+        {
+            var existingLoan =   await _dbContext.LoanApplications.FirstOrDefaultAsync(x => x.ApplicantIdentifier == applicantIdentifier);
+            bool loanExists = existingLoan != null;
+            string existingRedirectUrl = loanExists ? existingLoan.RedirectUrl : string.Empty;
+            return (loanExists, existingRedirectUrl);
+        }
+
+        public async Task<LoanApplicationRequestModel> UpdateLoanApplicationAsync(LoanApplicationRequestModel savedLoanApplication)
+        {
+            _dbContext.Entry(savedLoanApplication).State = EntityState.Modified;
+            await _dbContext.SaveChangesAsync();
+            return savedLoanApplication;
         }
     }
 }

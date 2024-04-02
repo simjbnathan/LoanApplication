@@ -6,9 +6,11 @@ namespace LoanApplicationApi.Repositories
     public interface ILoanApplicationRepository
     {
 
-        Task<List<LoanApplicationModel>> GetAllLoanApplications();
-        Task<LoanApplicationModel> GetLoanApplicationByIdAsync(int id);
-        Task<LoanApplicationModel> ProcessLoanApplicationAsync(LoanApplicationModel model);
-        Task<LoanApplicationModel> SaveLoanApplicationAsync(LoanApplicationModel loanModel);
+        Task<List<LoanApplicationRequestModel>> GetAllLoanApplications();
+        Task<LoanApplicationRequestModel> GetLoanApplicationByIdAsync(int id);
+        Task<LoanApplicationRequestModel> ProcessLoanApplicationAsync(LoanApplicationRequestModel model);
+        Task<LoanApplicationRequestModel> SaveLoanApplicationAsync(LoanApplicationRequestModel loanModel);
+        Task<(bool loanExists, string existingRedirectUrl)> GetExistingLoan(string applicantIdentifier, LoanApplicationRequestModel loanModel);
+        Task<LoanApplicationRequestModel> UpdateLoanApplicationAsync(LoanApplicationRequestModel savedLoanApplication);
     }
 }

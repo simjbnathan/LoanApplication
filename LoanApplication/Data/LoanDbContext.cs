@@ -9,6 +9,6 @@ namespace LoanApplicationApi.Data
         {
         }
 
-        public DbSet<LoanApplicationModel> LoanApplications { get; set; }
+        public DbSet<LoanApplicationRequestModel> LoanApplications { get; set; }
     }
 }

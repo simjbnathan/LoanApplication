@@ -5,6 +5,7 @@ using LoanApplicationApi.Repositories;
 using LoanApplicationApi.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.Extensions.Configuration;
 
 namespace LoanApplicationApi.Controllers
 {
@@ -13,14 +14,27 @@ namespace LoanApplicationApi.Controllers
     public class LoanApplicationApiController : ControllerBase
     {
         private readonly ILoanApplicationRepository _loanApplicationRepository;
-        private readonly LoanCalculator _loanCalculator;
+        private readonly LoanCalculatorService _loanCalculatorService;
         private readonly ValidationService _validationService;
 
-        public LoanApplicationApiController(ILoanApplicationRepository loanApplicationRepository, LoanCalculator loanCalculator, ValidationService validationService)
+        public LoanApplicationApiController(ILoanApplicationRepository loanApplicationRepository, LoanCalculatorService loanCalculatorService, ValidationService validationService)
         {
             _loanApplicationRepository = loanApplicationRepository;
-            _loanCalculator = loanCalculator;
+            _loanCalculatorService = loanCalculatorService;
             _validationService = validationService;
+        }
+
+        [HttpPost("calculate-repayment")]
+        public IActionResult CalculateLoanRepayment([FromBody] LoanRequestCalculateDto loanRequest)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            decimal repaymentAmount = _loanCalculatorService.CalculateRepaymentAmount(loanRequest.AmountRequired, loanRequest.Term, loanRequest.Product);
+
+            return Ok(new { RepaymentAmount = repaymentAmount });
         }
 
         [HttpGet]
@@ -29,7 +43,7 @@ namespace LoanApplicationApi.Controllers
             return Ok(_loanApplicationRepository.GetAllLoanApplications());
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("loanApi/{id:int}")]
         public async Task<IActionResult> GetLoanApplicationById([FromRoute] int id)
         {
             var loanApplication = await _loanApplicationRepository.GetLoanApplicationByIdAsync(id);
@@ -39,8 +53,8 @@ namespace LoanApplicationApi.Controllers
             }
             return Ok(loanApplication);
         }
-            
-        [HttpPost]
+
+        [HttpPost("LoanRequest")]
         public async Task<IActionResult> PostLoanApplication([FromBody] CreateLoanRequestDto loanDto)
         {
             try
@@ -49,35 +63,64 @@ namespace LoanApplicationApi.Controllers
                 {
                     return BadRequest(ModelState);
                 }
-                if (loanDto == null)
-                {
-                    return BadRequest("Loan application data is required.");
-                }
 
                 var loanModel = loanDto.ToLoanFromCreateDto();
-                // Save the loan application data
-                var savedLoanApplication = await _loanApplicationRepository.SaveLoanApplicationAsync(loanModel);
+                string applicantIdentifier = GenerateAppIdentifier(loanModel.FirstName, loanModel.LastName, loanModel.DateOfBirth);
 
-                // Generate redirect URL to the ApplyLoan action in the LoanController
-                var redirectUrl = "https://localhost:7144/Loan/LoanApplication/" + savedLoanApplication.Id;
-                return Redirect(redirectUrl);
+                (bool loanExists, string existingRedirectUrl) = await _loanApplicationRepository.GetExistingLoan(applicantIdentifier, loanModel);
+
+                if (loanExists)
+                {
+                    return Ok(existingRedirectUrl);
+                }
+                else
+                {
+                    loanModel.ApplicantIdentifier = applicantIdentifier;
+
+                    // Save the loan application
+                    var savedLoanApplication = await _loanApplicationRepository.SaveLoanApplicationAsync(loanModel);
+
+                    // Generate redirect URL after saving the loan application
+                    string redirectUrl = GenerateRedirectUrl(savedLoanApplication.Id);
+                    savedLoanApplication.RedirectUrl = redirectUrl;
+
+                    // Update the loan application with the correct redirect URL
+                    await _loanApplicationRepository.UpdateLoanApplicationAsync(savedLoanApplication);
+
+                    return Ok(redirectUrl);
+                }
+
+               
             }
             catch (Exception ex)
             {
+                // Log the exception
                 return StatusCode(500, "An error occurred while processing your request.");
             }
         }
 
+
+        private string GenerateRedirectUrl(int loanAppId)
+        {
+            string baseUrl = "https://localhost:7144/Loan/LoanApplication/";
+            return baseUrl + loanAppId;
+        }
+
+        private string GenerateAppIdentifier(string firstName, string lastName, DateTime dateOfBirth)
+        {
+            return $"{firstName.Substring(0, 1)}{lastName.Substring(0, 1)}{dateOfBirth:ddMMyyyy}";
+        }
+
         [HttpPost]
         [Route("CalculateQuote")]
-        public IActionResult CalculateQuote([FromBody] LoanApplicationModel loanApplication)
+        public IActionResult CalculateQuote([FromBody] LoanApplicationRequestModel loanApplication)
         {
-            var repaymentAmount = _loanCalculator.CalculateRepaymentAmount(loanApplication.AmountRequired,loanApplication.Term, loanApplication.Product);
+            var repaymentAmount = _loanCalculatorService.CalculateRepaymentAmount(loanApplication.AmountRequired,loanApplication.Term, loanApplication.Product);
             return Ok(repaymentAmount);
         }
 
         [HttpPost("validate")]
-        public IActionResult ValidateLoanApplication(LoanApplicationModel model)
+        public IActionResult ValidateLoanApplication(LoanApplicationRequestModel model)
         {
             var validationErrors = new List<string>();
 
@@ -125,7 +168,7 @@ namespace LoanApplicationApi.Controllers
         }
 
         [HttpPost("apply")]
-        public async Task<IActionResult> ApplyForLoanAsync([FromBody] LoanApplicationModel model)
+        public async Task<IActionResult> ApplyForLoanAsync([FromBody] LoanApplicationRequestModel model)
         {
             try
             {
@@ -134,9 +177,6 @@ namespace LoanApplicationApi.Controllers
                     return BadRequest(ModelState);
                 }
 
-                // Perform additional validation if needed
-
-                // Process the loan application asynchronously
                 var result = await _loanApplicationRepository.ProcessLoanApplicationAsync(model);
 
                 if (result == null)
@@ -150,5 +190,7 @@ namespace LoanApplicationApi.Controllers
                 return StatusCode(500, "An error occurred while processing your request.");
             }
         }
+
+
     }
 }

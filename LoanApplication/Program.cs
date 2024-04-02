@@ -14,7 +14,7 @@ builder.Services.AddDbContext<LoanDbContext>(options =>
 
 builder.Services.AddScoped<ILoanApplicationRepository, LoanApplicationRepository>();
 builder.Services.AddScoped<LoanService>();
-builder.Services.AddScoped<LoanCalculator>();
+builder.Services.AddScoped<LoanCalculatorService>();
 builder.Services.AddScoped<ValidationService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers();

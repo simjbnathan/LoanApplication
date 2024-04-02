@@ -1,8 +1,8 @@
-﻿@model LoanAppWeb.Models.LoanApplicationModel
-
+﻿@model LoanAppWeb.Models.LoanApplicationViewModel
 @{
     ViewData["Title"] = "Loan Application";
 }
+
 @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
 {
     <div class="alert alert-danger" role="alert">
@@ -27,7 +27,7 @@
 
                         <div class="form-group">
                             <label for="termRange" style="position: relative;">Term (in months): <output id="termOutput">@Model.Term</output></label>
-                            <input asp-for="Term" class="form-control-range" id="termRange" type="range" min="0" max="@Model.Term" oninput="document.getElementById('termOutput').innerText = this.value" />
+                            <input asp-for="Term" class="form-control-range" id="termRange" type="range" min="3" max="36" oninput="document.getElementById('termOutput').innerText = this.value" />
                             <span asp-validation-for="Term" class="text-danger"></span>
                         </div>
 
@@ -48,9 +48,9 @@
                             <div class="col-md-6">
                                 <!-- Title -->
                                 <div class="form-group">
-                                    <label asp-for="Title">Title:</label>
+                                    <label asp-for="Title" class="control-label"></label>
+
                                     <input asp-for="Title" class="form-control" />
-                                    <span asp-validation-for="Title" class="text-danger"></span>
                                 </div>
 
                                 <!-- First Name -->
@@ -93,7 +93,7 @@
 
                         <!-- Submit Button -->
                         <div class="text-center">
-                            <button type="submit" class="btn btn-primary">Calculate Quote</button>
+                            <button type="submit" id="submitButton" class="btn btn-primary">Calculate Quote</button>
                         </div>
                     </form>
                 </div>
@@ -101,11 +101,6 @@
         </div>
     </div>
 </div>
-
-
-
-
-
 
 @section Scripts {
     <script>
@@ -125,6 +120,48 @@
                 })
         })()
 
+       
+        var productSelect = document.getElementById("productSelect");
+        var termRange = document.getElementById("termRange");
+
+        productSelect.addEventListener("change", function () {
+            if (productSelect.value === "ProductB") {
+                termRange.min = 6;
+                termRange.value = Math.max(termRange.min, termRange.value); 
+            } else {
+                termRange.min = 3; 
+            }
+            document.getElementById('termOutput').innerText = termRange.value; 
+        });
+
+        // Update the term output when the term range input changes
+        document.getElementById('termRange').addEventListener('input', function () {
+            document.getElementById('termOutput').innerText = this.value;
+        });
+
+        // Update the amount output when the amount range input changes
+        document.getElementById('amountRange').addEventListener('input', function () {
+            document.getElementById('amountOutput').innerText = this.value;
+        });
+
+        // Attach event listener to the form submit button
+        document.getElementById('submitButton').addEventListener('click', function () {
+            localStorage.setItem('previousTermValue', document.getElementById('termRange').value);
+            localStorage.setItem('previousAmountValue', document.getElementById('amountRange').value);
+        });
+
+        // Restore the previous term and amount values when navigating back
+        window.addEventListener('pageshow', function (event) {
+            var previousTermValue = localStorage.getItem('previousTermValue');
+            var previousAmountValue = localStorage.getItem('previousAmountValue');
+
+            if (previousTermValue !== null && previousAmountValue !== null) {
+                document.getElementById('termRange').value = previousTermValue;
+                document.getElementById('termOutput').innerText = previousTermValue;
+                document.getElementById('amountRange').value = previousAmountValue;
+                document.getElementById('amountOutput').innerText = previousAmountValue;
+            }
+        });
        
     </script>
 }
