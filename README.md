@@ -18,17 +18,29 @@ To run LoanApp locally, follow these steps:
 
 1. Clone the repository: `[git clone https://github.com/simjbnathan/LoanApplication.git]`
 2. Open LoanAppApi and LoanWebApp projects.
-3. Run both project
-4. Must go to API first for the redirect Url.
+3. Run both projects.
 
 ## Usage
 
-1. Visit the LoanApp API, Run the RedirectUrl request.
-2. Redirect Url will redirect you to LoanApp
-3. Fill out the loan application form with your personal details and loan preferences.
-4. Click on "Calculate Quote" to see the estimated repayment amount.
-5. Review the quote and click on "Apply Now" to submit your application.
-6. Wait for the application to be processed and receive confirmation.
+1. Visit the LoanApp API, Run this request to redirect to the main page.
+    POST https://localhost:7120/api/LoanApplication/LoanRequest
+    Request Body:
+   {
+    "AmountRequired": 5000,
+    "Term": 2,
+    "Title": "Mr.",
+    "FirstName": "Jonathan",
+    "LastName": "Zerda",
+    "DateOfBirth": "1980-01-01",
+    "Mobile": "0422111333",
+    "Email": "jonathanzerda@gmail.com"
+   }
+
+3. Redirect Url will redirect you to LoanApp
+4. Fill out the loan application form with your personal details and loan preferences.
+5. Click on "Calculate Quote" to see the estimated repayment amount.
+6. Review the quote and click on "Apply Now" to submit your application.
+7. Wait for the application to be processed and receive confirmation.
 
 ## Contributing
 
