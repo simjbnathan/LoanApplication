@@ -2,7 +2,9 @@
 using LoanAppWeb.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using System;
+using System.Data;
 using System.Threading.Tasks;
 
 namespace LoanAppWeb.Controllers
@@ -10,77 +12,81 @@ namespace LoanAppWeb.Controllers
     public class LoanController : Controller
     {
         private readonly ILoanApplicationService _loanApplicationService;
+        private readonly ILogger<HomeController> _logger;
 
-        public LoanController(ILoanApplicationService loanApplicationService)
+        public LoanController(ILoanApplicationService loanApplicationService, ILogger<HomeController> logger)
         {
             _loanApplicationService = loanApplicationService ?? throw new ArgumentNullException(nameof(loanApplicationService));
+            _logger = logger;
         }
 
+        [HttpGet]
         public async Task<IActionResult> LoanApplication(int id)
         {
             try
             {
-                var loanApplication = await _loanApplicationService.GetLoanApplication(id);
+                LoanApplicationViewModel loanApplication = await _loanApplicationService.GetLoanApplication(id);
                 return View(loanApplication);
             }
             catch (Exception ex)
             {
-                // Log the exception
                 return StatusCode(500, "An error occurred while processing your request.");
             }
         }
-
         [HttpPost]
         public async Task<IActionResult> CalculateQuote(LoanApplicationViewModel model)
         {
             try
-
             {
-                if (!ModelState.IsValid)
+                if(!ModelState.IsValid)
                 {
-                    // If model state is invalid, return the view with validation errors
                     return View("LoanApplication", model);
                 }
                 var repaymentAmount = await _loanApplicationService.CalculateRepaymentAmount(model);
                 model.RepaymentAmount = repaymentAmount;
+
+                TempData["LoanApplicationModel"] = JsonConvert.SerializeObject(model);
+
                 return View("Quote", model);
             }
             catch (Exception ex)
             {
-                // Log the exception
                 ViewData["ErrorMessage"] = ex.Message;
                 return View("LoanApplication", model);
             }
+            
         }
 
         [HttpPost]
-        public async Task<IActionResult> SubmitLoanApplication(LoanApplicationViewModel model)
+        public async Task<IActionResult> SubmitLoanApplication()
         {
             try
             {
-                if (!ModelState.IsValid)
+                var serializedModel = TempData["LoanApplicationModel"] as string;
+                if (serializedModel == null)
                 {
-                    // If model state is invalid, return the view with validation errors
-                    return View("LoanApplication", model);
+                    return RedirectToAction("Error");
+                }
+                var model = JsonConvert.DeserializeObject<LoanApplicationViewModel>(serializedModel);
+                var (isValid, validationErrors) = await _loanApplicationService.ValidateLoanApplication(model);
+
+                if (!isValid)
+                {
+                    var errorMessage = "The following errors occurred: " + string.Join(", ", validationErrors);
+                    ViewData["ErrorMessage"] = errorMessage;
+
+                    return View("Quote", model);
                 }
 
-                // Perform validation checks
-                if (!await _loanApplicationService.ValidateLoanApplication(model))
-                {
-                    throw new Exception("Validation checks failed. Please review your information.");
-                }
-
-                // Apply for the loan
-                await _loanApplicationService.ApplyForLoanAsync(model);
-
-                // Redirect to success page
+                var loanApplication = await _loanApplicationService.ApplyForLoanAsync(model);
+                TempData.Clear();
+                
                 return RedirectToAction("Success", "Loan");
             }
             catch (Exception ex)
             {
-                // Log the exception
                 ViewData["ErrorMessage"] = ex.Message;
-                return View("Quote", model);
+                return View("LoanApplication", TempData["LoanApplicationModel"]);
             }
         }
 

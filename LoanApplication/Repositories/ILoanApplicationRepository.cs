@@ -12,5 +12,6 @@ namespace LoanApplicationApi.Repositories
         Task<LoanApplicationRequestModel> SaveLoanApplicationAsync(LoanApplicationRequestModel loanModel);
         Task<(bool loanExists, string existingRedirectUrl)> GetExistingLoan(string applicantIdentifier, LoanApplicationRequestModel loanModel);
         Task<LoanApplicationRequestModel> UpdateLoanApplicationAsync(LoanApplicationRequestModel savedLoanApplication);
+        void DeclineLoanApplication(int id, List<string> validationErrors);
     }
 }

@@ -33,8 +33,13 @@ namespace LoanApplicationApi.Repositories
 
         public async Task<LoanApplicationRequestModel> ProcessLoanApplicationAsync(LoanApplicationRequestModel model)
         {
-            await _dbContext.AddAsync(model);
-            await _dbContext.SaveChangesAsync();
+            _dbContext.Entry(model).State = EntityState.Modified;
+            if (model.Status != LoanApplicationStatus.Declined.ToString())
+            {
+                model.Status = LoanApplicationStatus.Approved.ToString();
+                await _dbContext.SaveChangesAsync();
+            }
+            
             return model;
         }
 
@@ -51,6 +56,17 @@ namespace LoanApplicationApi.Repositories
             _dbContext.Entry(savedLoanApplication).State = EntityState.Modified;
             await _dbContext.SaveChangesAsync();
             return savedLoanApplication;
+        }
+
+        public void DeclineLoanApplication(int id, List<string> validationErrors)
+        {
+            if (validationErrors.Count > 0)
+            {
+                var loanApplication = _dbContext.LoanApplications.Find(id);
+                loanApplication.Status = LoanApplicationStatus.Declined.ToString();
+                _dbContext.Entry(loanApplication).State = EntityState.Modified;
+                _dbContext.SaveChanges();
+            }
         }
     }
 }

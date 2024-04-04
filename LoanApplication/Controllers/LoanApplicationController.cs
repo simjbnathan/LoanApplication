@@ -11,13 +11,13 @@ namespace LoanApplicationApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class LoanApplicationApiController : ControllerBase
+    public class LoanApplicationController : ControllerBase
     {
         private readonly ILoanApplicationRepository _loanApplicationRepository;
         private readonly LoanCalculatorService _loanCalculatorService;
         private readonly ValidationService _validationService;
 
-        public LoanApplicationApiController(ILoanApplicationRepository loanApplicationRepository, LoanCalculatorService loanCalculatorService, ValidationService validationService)
+        public LoanApplicationController(ILoanApplicationRepository loanApplicationRepository, LoanCalculatorService loanCalculatorService, ValidationService validationService)
         {
             _loanApplicationRepository = loanApplicationRepository;
             _loanCalculatorService = loanCalculatorService;
@@ -71,30 +71,26 @@ namespace LoanApplicationApi.Controllers
 
                 if (loanExists)
                 {
-                    return Ok(existingRedirectUrl);
+                    return Redirect(existingRedirectUrl);
                 }
                 else
                 {
                     loanModel.ApplicantIdentifier = applicantIdentifier;
 
-                    // Save the loan application
                     var savedLoanApplication = await _loanApplicationRepository.SaveLoanApplicationAsync(loanModel);
 
-                    // Generate redirect URL after saving the loan application
                     string redirectUrl = GenerateRedirectUrl(savedLoanApplication.Id);
                     savedLoanApplication.RedirectUrl = redirectUrl;
 
-                    // Update the loan application with the correct redirect URL
                     await _loanApplicationRepository.UpdateLoanApplicationAsync(savedLoanApplication);
 
-                    return Ok(redirectUrl);
+                    return Redirect(redirectUrl);
                 }
 
                
             }
             catch (Exception ex)
             {
-                // Log the exception
                 return StatusCode(500, "An error occurred while processing your request.");
             }
         }
@@ -124,48 +120,36 @@ namespace LoanApplicationApi.Controllers
         {
             var validationErrors = new List<string>();
 
-            // Check if applicant is over minimum age
+            ValidateLoanRequest(model, validationErrors);
+
+            if (validationErrors.Count > 0)
+            {
+                return BadRequest(validationErrors);
+
+            }
+
+            return Ok(true);
+        }
+
+        private void ValidateLoanRequest(LoanApplicationRequestModel model, List<string> validationErrors)
+        {
             if (!_validationService.IsApplicantOverMinimumAge(model.DateOfBirth, 18))
             {
                 validationErrors.Add("Applicant must be at least 18 years old.");
             }
 
-            // Check if mobile number is not blacklisted
             if (!_validationService.IsMobileNumberNotBlacklisted(model.Mobile))
             {
                 validationErrors.Add("Mobile number is blacklisted.");
             }
 
-            // Check if email domain is not blacklisted
-            var emailDomain = GetDomainFromEmail(model.Email);
-            if (emailDomain != null && !_validationService.IsEmailDomainNotBlacklisted(emailDomain))
+            if (!_validationService.IsEmailDomainNotBlacklisted(model.Email))
             {
                 validationErrors.Add("Email domain is blacklisted.");
             }
-
-            // Return validation errors if any
-            if (validationErrors.Count > 0)
-            {
-                return BadRequest(validationErrors);
-            }
-
-            // Validation passed
-            return Ok(true);
         }
 
-        private string GetDomainFromEmail(string email)
-        {
-            try
-            {
-                var address = new System.Net.Mail.MailAddress(email);
-                return address.Host;
-            }
-            catch (FormatException)
-            {
-                // Invalid email format
-                return null;
-            }
-        }
+
 
         [HttpPost("apply")]
         public async Task<IActionResult> ApplyForLoanAsync([FromBody] LoanApplicationRequestModel model)

@@ -9,11 +9,27 @@
         {
             var today = DateTime.Today;
             var age = today.Year - dateOfBirth.Year;
-            if (dateOfBirth > today.AddYears(-age))
-                age--;
 
-            return age >= minimumAge;
+            // Check if the birthday has passed this year
+            if (dateOfBirth.Date > today.AddYears(-age))
+            {
+                age--; // Decrease age if birthday hasn't occurred yet
+            }
+
+            if (age < minimumAge)
+            {
+                return false;
+            }
+            else if (age == minimumAge)
+            {
+                return dateOfBirth.Date <= today.AddDays(-1);
+            }
+            else
+            {
+                return true;
+            }
         }
+
 
         public bool IsMobileNumberNotBlacklisted(string mobileNumber)
         {
@@ -26,7 +42,6 @@
             return !blacklistedDomains.Contains(domain);
         }
 
-        // Helper method to extract domain from email
         private string GetDomainFromEmail(string email)
         {
             try
@@ -36,7 +51,6 @@
             }
             catch (FormatException)
             {
-                // Invalid email format
                 return null;
             }
         }

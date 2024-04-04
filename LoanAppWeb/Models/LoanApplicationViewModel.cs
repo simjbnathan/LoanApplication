@@ -40,5 +40,6 @@ namespace LoanAppWeb.Models
         public string Product { get; set; }
 
         public decimal RepaymentAmount { get; set; } 
+
     }
 }

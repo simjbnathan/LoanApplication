@@ -9,6 +9,6 @@ namespace LoanAppWeb.Services
         Task<LoanApplicationViewModel> ApplyForLoanAsync(LoanApplicationViewModel model);
         Task<decimal> CalculateRepaymentAmount(LoanApplicationViewModel model);
         Task<LoanApplicationViewModel> GetLoanApplication(int id);
-        Task<bool> ValidateLoanApplication(LoanApplicationViewModel model);
+        Task<(bool isValid, List<string> validationErrors)> ValidateLoanApplication(LoanApplicationViewModel model);
     }
 }

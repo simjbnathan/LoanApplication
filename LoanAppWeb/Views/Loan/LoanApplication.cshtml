@@ -19,8 +19,8 @@
                     <form asp-action="CalculateQuote" method="post" class="needs-validation" novalidate>
                         <!-- Amount Required -->
                         <div class="form-group">
-                            <label for="amountRange" style="position: relative;">Amount Required: <span id="amountOutput">@Model.AmountRequired</span></label>
-                            <input asp-for="AmountRequired" class="form-control-range" id="amountRange" type="range" min="0" max="@Model.AmountRequired" oninput="document.getElementById('amountOutput').innerText = this.value" />
+                            <label for="amountRange" style="position: relative;">Amount Required: $<span id="amountOutput">@Model.AmountRequired</span></label>
+                            <input asp-for="AmountRequired" class="form-control-range" id="amountRange" type="range" min="1000" max="15000" oninput="document.getElementById('amountOutput').innerText = this.value" />
                             <span asp-validation-for="AmountRequired" class="text-danger"></span>
                         </div>
 
@@ -47,6 +47,8 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <!-- Title -->
+                                <input asp-for="Id" type="hidden" />
+                                <input asp-for="RepaymentAmount" type="hidden" />
                                 <div class="form-group">
                                     <label asp-for="Title" class="control-label"></label>
 
@@ -134,23 +136,19 @@
             document.getElementById('termOutput').innerText = termRange.value; 
         });
 
-        // Update the term output when the term range input changes
         document.getElementById('termRange').addEventListener('input', function () {
             document.getElementById('termOutput').innerText = this.value;
         });
 
-        // Update the amount output when the amount range input changes
         document.getElementById('amountRange').addEventListener('input', function () {
             document.getElementById('amountOutput').innerText = this.value;
         });
 
-        // Attach event listener to the form submit button
         document.getElementById('submitButton').addEventListener('click', function () {
             localStorage.setItem('previousTermValue', document.getElementById('termRange').value);
             localStorage.setItem('previousAmountValue', document.getElementById('amountRange').value);
         });
 
-        // Restore the previous term and amount values when navigating back
         window.addEventListener('pageshow', function (event) {
             var previousTermValue = localStorage.getItem('previousTermValue');
             var previousAmountValue = localStorage.getItem('previousAmountValue');
